@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101713">
+  <title>NutriBalance | Calculadora nutricional</title>
+  <style>
+    /* Paleta, tipografía y medidas compartidas por toda la interfaz. */
+    :root {
+      color-scheme: dark;
+      --bg: #101713;
+      --surface: #18211c;
+      --surface-raised: #202c25;
+      --border: #2c3a31;
+      --text: #f2f6f2;
+      --muted: #9aaa9e;
+      --green: #a8e063;
+      --green-dark: #6da83e;
+      --blue: #69c8e8;
+      --orange: #f4ad62;
+      --pink: #e98ab1;
+      --danger: #ff8b83;
+      --radius: 18px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Estilos base y fondo decorativo. */
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 10% 0%, rgba(168, 224, 99, .09), transparent 35rem),
+        var(--bg);
+      line-height: 1.5;
+    }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    .app-shell { width: min(1120px, calc(100% - 36px)); margin: 0 auto; }
+
+    /* Encabezado de marca y título. */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0;
+      border-bottom: 1px solid rgba(154, 170, 158, .16);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 750; letter-spacing: -.03em; }
+    .brand-mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 12px;
+      color: #15200f;
+      background: var(--green);
+      font-size: 21px;
+    }
+    .local-badge {
+      padding: 6px 10px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: .78rem;
+    }
+    .hero { padding: 42px 0 28px; }
+    .eyebrow { margin: 0 0 8px; color: var(--green); font-size: .78rem; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.35rem); letter-spacing: -.055em; line-height: 1.08; }
+    .hero-copy { max-width: 660px; margin: 13px 0 0; color: var(--muted); }
+
+    /* Tarjetas, títulos de sección y botones comunes. */
+    .card {
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(255,255,255,.025), transparent 65%), var(--surface);
+      box-shadow: 0 12px 34px rgba(0,0,0,.12);
+    }
+    .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 19px; }
+    .section-heading h2, .section-heading h3 { margin: 0; font-size: 1.14rem; letter-spacing: -.025em; }
+    .section-heading p { margin: 5px 0 0; color: var(--muted); font-size: .9rem; }
+    .section-kicker { margin-bottom: 6px !important; color: var(--green) !important; font-size: .72rem !important; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+    .primary-button, .secondary-button, .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 10px 16px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .primary-button { color: #172010; background: var(--green); }
+    .primary-button:hover { transform: translateY(-2px); background: #baf27b; }
+    .secondary-button { color: var(--text); border-color: var(--border); background: var(--surface-raised); }
+    .secondary-button:hover, .icon-button:hover { transform: translateY(-1px); border-color: #526858; background: #29382e; }
+    .official-link { margin-top: 18px; text-decoration: none; }
+    .icon-button { width: 38px; min-height: 38px; padding: 0; color: var(--muted); border-color: var(--border); background: transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid rgba(168,224,99,.55); outline-offset: 2px; }
+
+    /* Formulario y mensajes accesibles de validación. */
+    .profile-card { margin-bottom: 22px; }
+    .form-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    .field label { color: #dce5de; font-size: .84rem; font-weight: 650; }
+    .field input, .field select, .food-select, .grams-input {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #121a15;
+    }
+    input::placeholder { color: #78877d; }
+    select option, select optgroup { color: var(--text); background: #18211c; }
+    .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 19px; }
+    .form-note, .disclaimer { color: var(--muted); font-size: .8rem; }
+    .error-message { min-height: 1.25em; margin: 12px 0 0; color: var(--danger); font-size: .88rem; }
+
+    /* Resumen energético y distribución de macronutrientes. */
+    .results { display: none; }
+    .results.visible { display: block; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+    .metric-card { min-height: 132px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+    .metric-label { color: var(--muted); font-size: .85rem; }
+    .metric-value { margin-top: 7px; font-size: clamp(1.55rem, 3vw, 2.05rem); font-weight: 800; letter-spacing: -.05em; }
+    .metric-unit { color: var(--muted); font-size: .85rem; font-weight: 550; letter-spacing: 0; }
+    .metric-caption { margin-top: 3px; color: var(--muted); font-size: .78rem; }
+    .macro-targets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .macro-target { padding: 15px; border-radius: 14px; background: var(--surface-raised); }
+    .macro-target-top, .progress-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .macro-target-name { color: var(--muted); font-size: .83rem; }
+    .macro-target-value { margin-top: 5px; font-size: 1.28rem; font-weight: 750; }
+    .dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; vertical-align: 1px; }
+    .protein-dot { background: var(--green); }
+    .carb-dot { background: var(--blue); }
+    .fat-dot { background: var(--orange); }
+
+    /* Registro de alimentos en gramos y barras de consumo. */
+    .main-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(330px, .92fr); gap: 22px; margin-top: 22px; }
+    .food-entry { display: grid; grid-template-columns: minmax(0, 1fr) 105px auto; align-items: end; gap: 10px; }
+    .food-entry .field label { font-size: .78rem; }
+    .food-entry .primary-button { min-height: 46px; padding: 10px 13px; }
+    .food-list { display: grid; gap: 9px; margin-top: 18px; }
+    .food-row { display: grid; grid-template-columns: minmax(0, 1fr) 105px 38px; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.018); }
+    .food-row-name { font-size: .9rem; font-weight: 650; }
+    .food-row-group { color: var(--muted); font-size: .74rem; }
+    .grams-wrap { position: relative; }
+    .grams-input { min-height: 39px; padding: 8px 32px 8px 10px; font-size: .85rem; }
+    .grams-unit { position: absolute; top: 50%; right: 10px; color: var(--muted); font-size: .73rem; transform: translateY(-50%); pointer-events: none; }
+    .empty-state { padding: 25px 12px; color: var(--muted); border: 1px dashed var(--border); border-radius: 12px; text-align: center; font-size: .87rem; }
+    .progress-list { display: grid; gap: 18px; }
+    .progress-label { font-size: .86rem; font-weight: 650; }
+    .progress-numbers { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+    .progress-track { height: 9px; margin-top: 8px; overflow: hidden; border-radius: 99px; background: #2a352e; }
+    .progress-fill { width: 0; height: 100%; border-radius: inherit; transition: width .35s ease; }
+    .protein-fill { background: var(--green); }
+    .carb-fill { background: var(--blue); }
+    .fat-fill { background: var(--orange); }
+    .calorie-fill { background: linear-gradient(90deg, var(--green-dark), var(--green)); }
+    .calorie-summary { margin-top: 21px; padding-top: 17px; border-top: 1px solid var(--border); }
+
+    /* Sugerencias de comidas a lo largo del día. */
+    .meal-section { margin: 22px 0 0; }
+    .meal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .meal-card { padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-raised); }
+    .meal-time { color: var(--green); font-size: .72rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    .meal-card h3 { margin: 7px 0 8px; font-size: .98rem; }
+    .meal-card p { margin: 0; color: #bfcbc2; font-size: .8rem; }
+    .meal-calories { display: inline-block; margin-top: 11px; color: var(--muted); font-size: .73rem; }
+    .disclaimer { margin: 15px 2px 30px; line-height: 1.6; }
+    .footer { padding: 18px 0 28px; color: #78877d; border-top: 1px solid rgba(154,170,158,.13); font-size: .75rem; text-align: center; }
+
+    /* Ajustes para tablet y móvil. */
+    @media (max-width: 850px) {
+      .form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .main-grid { grid-template-columns: 1fr; }
+      .meal-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .app-shell { width: min(100% - 24px, 440px); }
+      .topbar { padding: 17px 0; }
+      .local-badge { font-size: .68rem; }
+      .hero { padding: 32px 0 22px; }
+      .card { padding: 18px; }
+      .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .form-footer { align-items: stretch; flex-direction: column; }
+      .summary-grid { grid-template-columns: 1fr; gap: 10px; }
+      .metric-card { min-height: 0; padding: 16px; }
+      .macro-targets { gap: 8px; }
+      .macro-target { padding: 11px 9px; }
+      .macro-target-name { font-size: .73rem; }
+      .macro-target-value { font-size: 1.05rem; }
+      .food-entry { grid-template-columns: minmax(0, 1fr) 82px; }
+      .food-entry .primary-button { grid-column: 1 / -1; }
+      .food-row { grid-template-columns: minmax(0, 1fr) 80px 34px; gap: 7px; padding: 9px; }
+      .meal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section-heading { flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Marca y presentación de la aplicación. -->
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>NutriBalance</span></div>
+      <span class="local-badge">● Funciona sin conexión</span>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Tu guía diaria de bienestar</p>
+        <h1 id="page-title">Come bien.<br>Siéntete mejor.</h1>
+        <p class="hero-copy">Calcula una referencia de tus necesidades energéticas, registra lo que comes y encuentra ideas sencillas para equilibrar tu día.</p>
+        <a class="secondary-button official-link" href="sitioweb.html">Regresar a la página oficial</a>
+      </section>
+
+      <!-- Datos necesarios para estimar las necesidades diarias. -->
+      <section class="card profile-card" aria-labelledby="profile-title">
+        <div class="section-heading">
+          <div><p class="section-kicker">Paso 1 · Tu perfil</p><h2 id="profile-title">Cuéntanos un poco de ti</h2></div>
+          <span class="local-badge">Cálculo orientativo</span>
+        </div>
+        <form id="profile-form" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label for="weight">Peso (kg)</label>
+              <input id="weight" name="weight" type="number" min="20" max="350" step="0.1" placeholder="Ej. 68" required>
+            </div>
+            <div class="field">
+              <label for="height">Estatura (cm)</label>
+              <input id="height" name="height" type="number" min="100" max="250" step="0.1" placeholder="Ej. 170" required>
+            </div>
+            <div class="field">
+              <label for="age">Edad (años)</label>
+              <input id="age" name="age" type="number" min="18" max="100" step="1" placeholder="Ej. 30" required>
+            </div>
+            <div class="field">
+              <label for="sex">Sexo</label>
+              <select id="sex" name="sex" required>
+                <option value="">Selecciona</option>
+                <option value="male">Masculino</option>
+                <option value="female">Femenino</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="activity">Actividad física</label>
+              <select id="activity" name="activity" required>
+                <option value="">Selecciona</option>
+                <option value="1.2">Sedentario</option>
+                <option value="1.375">Ligero</option>
+                <option value="1.55">Moderado</option>
+                <option value="1.725">Intenso</option>
+                <option value="1.9">Muy intenso</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="goal">Objetivo</label>
+              <select id="goal" name="goal" required>
+                <option value="">Selecciona</option>
+                <option value="lose">Bajar peso</option>
+                <option value="maintain">Mantener peso</option>
+                <option value="gain">Ganar masa muscular</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-footer">
+            <span class="form-note">Edad admitida: 18 a 100 años. Los resultados son estimaciones.</span>
+            <button class="primary-button" type="submit">Calcular mi guía <span aria-hidden="true">→</span></button>
+          </div>
+          <p class="error-message" id="profile-error" role="alert" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <!-- Resumen de calorías y objetivos de macronutrientes, visible tras calcular. -->
+      <section class="results" id="results" aria-live="polite">
+        <div class="summary-grid">
+          <article class="metric-card">
+            <div class="metric-label">Tasa metabólica basal</div>
+            <div class="metric-value"><span id="bmr-value">—</span> <span class="metric-unit">kcal</span></div>
+            <div class="metric-caption">Energía estimada en reposo · Mifflin–St Jeor</div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-label">Gasto energético total</div>
+            <div class="metric-value"><span id="tdee-value">—</span> <span class="metric-unit">kcal</span></div>
+            <div class="metric-caption">Estimación diaria según tu actividad</div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-label">Meta diaria sugerida</div>
+            <div class="metric-value"><span id="calorie-target">—</span> <span class="metric-unit">kcal</span></div>
+            <div class="metric-caption" id="goal-caption">Según el objetivo que elegiste</div>
+          </article>
+        </div>
+        <section class="card" aria-labelledby="macro-target-title">
+          <div class="section-heading">
+            <div><p class="section-kicker">Tu referencia diaria</p><h2 id="macro-target-title">Objetivos de macronutrientes</h2></div>
+          </div>
+          <div class="macro-targets">
+            <div class="macro-target">
+              <div class="macro-target-top"><span class="macro-target-name"><i class="dot protein-dot"></i>Proteínas</span><span class="macro-target-name">Según peso y objetivo</span></div>
+              <div class="macro-target-value"><span id="protein-target">—</span> <span class="metric-unit">g</span></div>
+            </div>
+            <div class="macro-target">
+              <div class="macro-target-top"><span class="macro-target-name"><i class="dot carb-dot"></i>Carbohidratos</span><span class="macro-target-name">Energía restante</span></div>
+              <div class="macro-target-value"><span id="carb-target">—</span> <span class="metric-unit">g</span></div>
+            </div>
+            <div class="macro-target">
+              <div class="macro-target-top"><span class="macro-target-name"><i class="dot fat-dot"></i>Grasas</span><span class="macro-target-name">25% de energía</span></div>
+              <div class="macro-target-value"><span id="fat-target">—</span> <span class="metric-unit">g</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Alimentos por grupo de la pirámide y cantidades registradas. -->
+        <div class="main-grid">
+          <section class="card" aria-labelledby="food-title">
+            <div class="section-heading">
+              <div><p class="section-kicker">Paso 2 · Tu consumo</p><h2 id="food-title">Registra tus alimentos</h2><p>Indica los gramos consumidos para actualizar el resumen.</p></div>
+            </div>
+            <form id="food-form" class="food-entry">
+              <div class="field">
+                <label for="food-select">Alimento</label>
+                <select id="food-select" class="food-select" required>
+                  <option value="">Elige un alimento</option>
+                  <optgroup label="Cereales">
+                    <option value="rice">Arroz cocido</option><option value="oats">Avena</option><option value="bread">Pan integral</option><option value="potato">Papa cocida</option>
+                  </optgroup>
+                  <optgroup label="Proteínas">
+                    <option value="chicken">Pollo cocido</option><option value="beef">Carne de res magra</option><option value="tuna">Atún escurrido</option><option value="egg">Huevo cocido</option>
+                  </optgroup>
+                  <optgroup label="Frutas">
+                    <option value="apple">Manzana</option><option value="banana">Banano</option><option value="orange">Naranja</option>
+                  </optgroup>
+                  <optgroup label="Verduras">
+                    <option value="broccoli">Brócoli</option><option value="carrot">Zanahoria</option><option value="tomato">Tomate</option>
+                  </optgroup>
+                  <optgroup label="Lácteos">
+                    <option value="milk">Leche</option><option value="yogurt">Yogur natural</option><option value="cheese">Queso</option>
+                  </optgroup>
+                  <optgroup label="Grasas saludables">
+                    <option value="avocado">Aguacate</option><option value="almonds">Almendras</option><option value="oliveOil">Aceite de oliva</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="field">
+                <label for="food-grams">Cantidad</label>
+                <input id="food-grams" type="number" min="1" max="10000" step="1" placeholder=" gramos" required>
+              </div>
+              <button class="primary-button" type="submit"><span aria-hidden="true">＋</span> Añadir</button>
+            </form>
+            <p class="error-message" id="food-error" role="alert" aria-live="polite"></p>
+            <div class="food-list" id="food-list" aria-live="polite">
+              <div class="empty-state">Aún no has registrado alimentos. Añade el primero arriba.</div>
+            </div>
+          </section>
+
+          <!-- Barras que comparan lo consumido con la meta calculada. -->
+          <section class="card" aria-labelledby="progress-title">
+            <div class="section-heading">
+              <div><p class="section-kicker">Tu día, de un vistazo</p><h2 id="progress-title">Progreso nutricional</h2><p>El progreso se actualiza con cada alimento.</p></div>
+            </div>
+            <div class="progress-list">
+              <div class="progress-item">
+                <div class="progress-top"><span class="progress-label"><i class="dot protein-dot"></i>Proteínas</span><span class="progress-numbers" id="protein-progress-text">0 / 0 g · 0%</span></div>
+                <div class="progress-track" role="progressbar" aria-label="Proteínas consumidas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill protein-fill" id="protein-progress"></div></div>
+              </div>
+              <div class="progress-item">
+                <div class="progress-top"><span class="progress-label"><i class="dot carb-dot"></i>Carbohidratos</span><span class="progress-numbers" id="carb-progress-text">0 / 0 g · 0%</span></div>
+                <div class="progress-track" role="progressbar" aria-label="Carbohidratos consumidos" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill carb-fill" id="carb-progress"></div></div>
+              </div>
+              <div class="progress-item">
+                <div class="progress-top"><span class="progress-label"><i class="dot fat-dot"></i>Grasas</span><span class="progress-numbers" id="fat-progress-text">0 / 0 g · 0%</span></div>
+                <div class="progress-track" role="progressbar" aria-label="Grasas consumidas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill fat-fill" id="fat-progress"></div></div>
+              </div>
+            </div>
+            <div class="calorie-summary">
+              <div class="progress-top"><span class="progress-label">Calorías</span><span class="progress-numbers" id="calorie-progress-text">0 / 0 kcal · 0%</span></div>
+              <div class="progress-track" role="progressbar" aria-label="Calorías consumidas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill calorie-fill" id="calorie-progress"></div></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Menú orientativo repartido en cinco momentos de comida. -->
+        <section class="card meal-section" aria-labelledby="meal-title">
+          <div class="section-heading">
+            <div><p class="section-kicker">Ideas para organizarte</p><h2 id="meal-title">Plan alimenticio sugerido</h2><p>Una propuesta flexible; ajusta porciones según tu apetito y contexto.</p></div>
+          </div>
+          <div class="meal-grid" id="meal-grid"></div>
+        </section>
+        <p class="disclaimer">Los cálculos y el menú son orientativos y no sustituyen la evaluación de un profesional de nutrición o salud. Las necesidades individuales pueden variar; consulta con un profesional antes de hacer cambios importantes, especialmente si tienes una condición médica.</p>
+      </section>
+    </main>
+    <footer class="footer">NutriBalance · Herramienta informativa de bienestar</footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    // Valores nutricionales aproximados por cada 100 g de parte comestible.
+    // Arroz, papa, carnes, huevo y atún se consideran cocidos o listos para comer.
+    const foods = {
+      rice:     { name: "Arroz cocido", group: "Cereales", protein: 2.7, carbs: 28.2, fat: 0.3, calories: 130 },
+      oats:     { name: "Avena", group: "Cereales", protein: 16.9, carbs: 66.3, fat: 6.9, calories: 389 },
+      bread:    { name: "Pan integral", group: "Cereales", protein: 12.5, carbs: 43.3, fat: 3.5, calories: 247 },
+      potato:   { name: "Papa cocida", group: "Cereales", protein: 1.9, carbs: 20.1, fat: 0.1, calories: 87 },
+      chicken:  { name: "Pollo cocido", group: "Proteínas", protein: 31, carbs: 0, fat: 3.6, calories: 165 },
+      beef:     { name: "Carne de res magra", group: "Proteínas", protein: 26, carbs: 0, fat: 10, calories: 217 },
+      tuna:     { name: "Atún escurrido", group: "Proteínas", protein: 29, carbs: 0, fat: 1, calories: 132 },
+      egg:      { name: "Huevo cocido", group: "Proteínas", protein: 12.6, carbs: 0.7, fat: 10.6, calories: 155 },
+      apple:    { name: "Manzana", group: "Frutas", protein: 0.3, carbs: 13.8, fat: 0.2, calories: 52 },
+      banana:   { name: "Banano", group: "Frutas", protein: 1.1, carbs: 22.8, fat: 0.3, calories: 89 },
+      orange:   { name: "Naranja", group: "Frutas", protein: 0.9, carbs: 11.8, fat: 0.1, calories: 47 },
+      broccoli: { name: "Brócoli", group: "Verduras", protein: 2.8, carbs: 6.6, fat: 0.4, calories: 34 },
+      carrot:   { name: "Zanahoria", group: "Verduras", protein: 0.9, carbs: 9.6, fat: 0.2, calories: 41 },
+      tomato:   { name: "Tomate", group: "Verduras", protein: 0.9, carbs: 3.9, fat: 0.2, calories: 18 },
+      milk:     { name: "Leche", group: "Lácteos", protein: 3.4, carbs: 4.8, fat: 3.3, calories: 61 },
+      yogurt:   { name: "Yogur natural", group: "Lácteos", protein: 3.5, carbs: 4.7, fat: 3.3, calories: 61 },
+      cheese:   { name: "Queso", group: "Lácteos", protein: 25, carbs: 1.3, fat: 33, calories: 402 },
+      avocado:  { name: "Aguacate", group: "Grasas saludables", protein: 2, carbs: 8.5, fat: 14.7, calories: 160 },
+      almonds:  { name: "Almendras", group: "Grasas saludables", protein: 21.2, carbs: 21.6, fat: 49.9, calories: 579 },
+      oliveOil: { name: "Aceite de oliva", group: "Grasas saludables", protein: 0, carbs: 0, fat: 100, calories: 884 }
+    };
+
+    // Estado de la página: objetivos calculados y lista de alimentos consumidos.
+    const state = { targets: null, entries: [] };
+    const profileForm = document.getElementById("profile-form");
+    const profileError = document.getElementById("profile-error");
+    const foodForm = document.getElementById("food-form");
+    const foodError = document.getElementById("food-error");
+    const foodList = document.getElementById("food-list");
+
+    // Presenta cantidades con formato local en español y precisión apropiada.
+    function formatNumber(value, decimals = 0) {
+      return new Intl.NumberFormat("es", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals
+      }).format(value);
+    }
+
+    // Valida el perfil y calcula BMR, TDEE y metas diarias.
+    profileForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      profileError.textContent = "";
+
+      const weight = Number(document.getElementById("weight").value);
+      const height = Number(document.getElementById("height").value);
+      const age = Number(document.getElementById("age").value);
+      const sex = document.getElementById("sex").value;
+      const activity = Number(document.getElementById("activity").value);
+      const goal = document.getElementById("goal").value;
+
+      if (!Number.isFinite(weight) || weight < 20 || weight > 350 ||
+          !Number.isFinite(height) || height < 100 || height > 250 ||
+          !Number.isInteger(age) || age < 18 || age > 100 ||
+          !sex || !Number.isFinite(activity) || !goal) {
+        profileError.textContent = "Revisa los datos: peso 20–350 kg, estatura 100–250 cm y edad 18–100 años. Completa también las selecciones.";
+        return;
+      }
+
+      // Ecuación Mifflin–St Jeor: constante distinta según el sexo seleccionado.
+      const bmr = (10 * weight) + (6.25 * height) - (5 * age) + (sex === "male" ? 5 : -161);
+      const tdee = bmr * activity;
+      const adjustment = goal === "lose" ? 0.85 : goal === "gain" ? 1.10 : 1;
+      const calorieTarget = tdee * adjustment;
+      const proteinFactor = goal === "lose" ? 1.8 : goal === "gain" ? 2 : 1.6;
+      const protein = weight * proteinFactor;
+      const fat = (calorieTarget * 0.25) / 9;
+      const carbs = Math.max(0, (calorieTarget - (protein * 4) - (fat * 9)) / 4);
+
+      state.targets = { bmr, tdee, calorieTarget, protein, carbs, fat };
+      document.getElementById("bmr-value").textContent = formatNumber(bmr);
+      document.getElementById("tdee-value").textContent = formatNumber(tdee);
+      document.getElementById("calorie-target").textContent = formatNumber(calorieTarget);
+      document.getElementById("protein-target").textContent = formatNumber(protein);
+      document.getElementById("carb-target").textContent = formatNumber(carbs);
+      document.getElementById("fat-target").textContent = formatNumber(fat);
+      document.getElementById("goal-caption").textContent =
+        goal === "lose" ? "Déficit moderado estimado del 15%" :
+        goal === "gain" ? "Superávit moderado estimado del 10%" : "Mantenimiento estimado";
+      document.getElementById("results").classList.add("visible");
+      renderMealPlan(calorieTarget);
+      updateProgress();
+      document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    // Añade una ración; cada cantidad se puede editar después en la lista.
+    foodForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      foodError.textContent = "";
+      const foodId = document.getElementById("food-select").value;
+      const gramsInput = document.getElementById("food-grams");
+      const grams = Number(gramsInput.value);
+
+      if (!state.targets) {
+        foodError.textContent = "Primero completa tu perfil para calcular tus metas diarias.";
+        return;
+      }
+      if (!foods[foodId] || !Number.isFinite(grams) || grams < 1 || grams > 10000) {
+        foodError.textContent = "Selecciona un alimento e indica una cantidad entre 1 y 10 000 gramos.";
+        return;
+      }
+
+      state.entries.push({ id: `${Date.now()}-${Math.random()}`, foodId, grams });
+      foodForm.reset();
+      renderFoodList();
+      updateProgress();
+      document.getElementById("food-select").focus();
+    });
+
+    // Renderiza de nuevo los alimentos y conserva los gramos editables.
+    function renderFoodList() {
+      foodList.replaceChildren();
+      if (state.entries.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "Aún no has registrado alimentos. Añade el primero arriba.";
+        foodList.append(empty);
+        return;
+      }
+
+      state.entries.forEach((entry) => {
+        const food = foods[entry.foodId];
+        const row = document.createElement("div");
+        row.className = "food-row";
+
+        const description = document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "food-row-name";
+        name.textContent = food.name;
+        const group = document.createElement("div");
+        group.className = "food-row-group";
+        group.textContent = food.group;
+        description.append(name, group);
+
+        const gramsWrap = document.createElement("div");
+        gramsWrap.className = "grams-wrap";
+        const gramsInput = document.createElement("input");
+        gramsInput.className = "grams-input";
+        gramsInput.type = "number";
+        gramsInput.min = "1";
+        gramsInput.max = "10000";
+        gramsInput.step = "1";
+        gramsInput.value = String(entry.grams);
+        gramsInput.setAttribute("aria-label", `Gramos de ${food.name}`);
+        gramsInput.addEventListener("input", () => {
+          const nextGrams = Number(gramsInput.value);
+          if (Number.isFinite(nextGrams) && nextGrams >= 1 && nextGrams <= 10000) {
+            entry.grams = nextGrams;
+            foodError.textContent = "";
+            updateProgress();
+          }
+        });
+        gramsInput.addEventListener("change", () => {
+          const nextGrams = Number(gramsInput.value);
+          if (!Number.isFinite(nextGrams) || nextGrams < 1 || nextGrams > 10000) {
+            foodError.textContent = "La cantidad debe estar entre 1 y 10 000 gramos.";
+            gramsInput.value = String(entry.grams);
+          } else {
+            entry.grams = nextGrams;
+            foodError.textContent = "";
+          }
+          updateProgress();
+        });
+        const unit = document.createElement("span");
+        unit.className = "grams-unit";
+        unit.textContent = "g";
+        gramsWrap.append(gramsInput, unit);
+
+        const removeButton = document.createElement("button");
+        removeButton.className = "icon-button";
+        removeButton.type = "button";
+        removeButton.textContent = "×";
+        removeButton.setAttribute("aria-label", `Quitar ${food.name}`);
+        removeButton.addEventListener("click", () => {
+          state.entries = state.entries.filter((item) => item.id !== entry.id);
+          renderFoodList();
+          updateProgress();
+        });
+        row.append(description, gramsWrap, removeButton);
+        foodList.append(row);
+      });
+    }
+
+    // Suma macros y calorías de los alimentos y actualiza barras accesibles.
+    function updateProgress() {
+      if (!state.targets) return;
+      const consumed = state.entries.reduce((total, entry) => {
+        const food = foods[entry.foodId];
+        const portion = entry.grams / 100;
+        total.protein += food.protein * portion;
+        total.carbs += food.carbs * portion;
+        total.fat += food.fat * portion;
+        total.calories += food.calories * portion;
+        return total;
+      }, { protein: 0, carbs: 0, fat: 0, calories: 0 });
+
+      setProgress("protein", consumed.protein, state.targets.protein, "g");
+      setProgress("carb", consumed.carbs, state.targets.carbs, "g");
+      setProgress("fat", consumed.fat, state.targets.fat, "g");
+      setProgress("calorie", consumed.calories, state.targets.calorieTarget, "kcal");
+    }
+
+    // Mantiene el ancho gráfico dentro de 100%, pero informa el porcentaje real.
+    function setProgress(key, current, target, unit) {
+      const percentage = target > 0 ? (current / target) * 100 : 0;
+      const roundedPercentage = Math.round(percentage);
+      document.getElementById(`${key}-progress`).style.width = `${Math.min(percentage, 100)}%`;
+      document.getElementById(`${key}-progress-text`).textContent =
+        `${formatNumber(current, 1)} / ${formatNumber(target)} ${unit} · ${roundedPercentage}%`;
+      const progressBar = document.getElementById(`${key}-progress`).parentElement;
+      progressBar.setAttribute("aria-valuenow", String(Math.min(roundedPercentage, 100)));
+      progressBar.setAttribute("aria-valuetext", `${roundedPercentage}% de la meta`);
+    }
+
+    // Genera ideas de comidas y distribuye la referencia calórica en cinco tiempos.
+    function renderMealPlan(calories) {
+      const meals = [
+        { time: "7:00 – 9:00", name: "Desayuno", share: .25, text: "Avena con leche y banano, más un huevo cocido." },
+        { time: "10:00 – 11:30", name: "Refrigerio mañana", share: .10, text: "Yogur natural con manzana o naranja." },
+        { time: "12:30 – 14:30", name: "Almuerzo", share: .35, text: "Pollo a la plancha, arroz, brócoli y aguacate." },
+        { time: "15:30 – 17:00", name: "Refrigerio tarde", share: .10, text: "Pan integral con queso fresco y tomate." },
+        { time: "19:00 – 21:00", name: "Cena", share: .20, text: "Atún con papa cocida, zanahoria y ensalada." }
+      ];
+      const grid = document.getElementById("meal-grid");
+      grid.replaceChildren();
+      meals.forEach((meal) => {
+        const card = document.createElement("article");
+        card.className = "meal-card";
+        const time = document.createElement("div");
+        time.className = "meal-time";
+        time.textContent = meal.time;
+        const title = document.createElement("h3");
+        title.textContent = meal.name;
+        const description = document.createElement("p");
+        description.textContent = meal.text;
+        const caloriesLabel = document.createElement("span");
+        caloriesLabel.className = "meal-calories";
+        caloriesLabel.textContent = `Referencia: ${formatNumber(calories * meal.share)} kcal`;
+        card.append(time, title, description, caloriesLabel);
+        grid.append(card);
+      });
+    }
+  </script>
+</body>
+</html>
